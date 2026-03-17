@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Retro Cyber Snake</title>
+
+<style>
+  body {
+    margin: 0;
+    background: black;
+    color: #00ff00;
+    font-family: monospace;
+    text-align: center;
+  }
+
+  h1 {
+    text-shadow: 0 0 5px #00ff00;
+  }
+
+  canvas {
+    background: black;
+    border: 2px solid #00ff00;
+    margin-top: 20px;
+  }
+
+  .panel {
+    margin-top: 10px;
+  }
+
+  button, select {
+    margin: 5px;
+    padding: 6px 12px;
+    background: black;
+    color: #00ff00;
+    border: 1px solid #00ff00;
+    cursor: pointer;
+  }
+
+  button:hover {
+    background: #00ff00;
+    color: black;
+  }
+</style>
+</head>
+
+<body>
+
+<h1>🟢 RETRO SNAKE 🟢</h1>
+
+<canvas id="game" width="400" height="400"></canvas>
+
+<div class="panel">
+  Score: <span id="score">0</span>
+</div>
+
+<div class="panel">
+  Speed:
+  <select id="speed">
+    <option value="150">Slow</option>
+    <option value="100" selected>Normal</option>
+    <option value="60">Fast</option>
+  </select>
+
+  Theme:
+  <select id="theme">
+    <option value="#00ff00" selected>Green</option>
+    <option value="#00ffff">Cyan</option>
+    <option value="#ff00ff">Pink</option>
+    <option value="#ffffff">White</option>
+  </select>
+</div>
+
+<button onclick="startGame()">Start / Restart</button>
+
+<script>
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
+const grid = 20;
+let snake, apple, dx, dy, score, loop;
+let color = "#00ff00";
+
+function init() {
+  snake = [{x: 200, y: 200}];
+  dx = grid;
+  dy = 0;
+  score = 0;
+
+  placeApple();
+
+  document.getElementById("score").innerText = score;
+}
+
+function placeApple() {
+  apple = {
+    x: Math.floor(Math.random() * 20) * grid,
+    y: Math.floor(Math.random() * 20) * grid
+  };
+
+  // prevent spawning on snake
+  for (let cell of snake) {
+    if (cell.x === apple.x && cell.y === apple.y) {
+      placeApple();
+    }
+  }
+}
+
+function drawGrid() {
+  ctx.strokeStyle = "#003300";
+  for (let i = 0; i < canvas.width; i += grid) {
+    ctx.beginPath();
+    ctx.moveTo(i, 0);
+    ctx.lineTo(i, canvas.height);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(0, i);
+    ctx.lineTo(canvas.width, i);
+    ctx.stroke();
+  }
+}
+
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  drawGrid();
+
+  const head = {x: snake[0].x + dx, y: snake[0].y + dy};
+
+  // CLASSIC RULE: no wrap (game over on wall)
+  if (
+    head.x < 0 || head.x >= canvas.width ||
+    head.y < 0 || head.y >= canvas.height
+  ) {
+    gameOver();
+    return;
+  }
+
+  // self collision
+  for (let cell of snake) {
+    if (cell.x === head.x && cell.y === head.y) {
+      gameOver();
+      return;
+    }
+  }
+
+  snake.unshift(head);
+
+  if (head.x === apple.x && head.y === apple.y) {
+    score++;
+    document.getElementById("score").innerText = score;
+    placeApple();
+  } else {
+    snake.pop();
+  }
+
+  // apple
+  ctx.fillStyle = "red";
+  ctx.fillRect(apple.x, apple.y, grid - 2, grid - 2);
+
+  // snake
+  ctx.fillStyle = color;
+  snake.forEach(cell => {
+    ctx.fillRect(cell.x, cell.y, grid - 2, grid - 2);
+  });
+}
+
+function gameOver() {
+  clearInterval(loop);
+  alert("GAME OVER! Score: " + score);
+}
+
+// controls (classic: no reverse allowed)
+document.addEventListener("keydown", e => {
+  if (e.key === "ArrowLeft" && dx === 0) {
+    dx = -grid; dy = 0;
+  } else if (e.key === "ArrowUp" && dy === 0) {
+    dx = 0; dy = -grid;
+  } else if (e.key === "ArrowRight" && dx === 0) {
+    dx = grid; dy = 0;
+  } else if (e.key === "ArrowDown" && dy === 0) {
+    dx = 0; dy = grid;
+  }
+});
+
+function startGame() {
+  clearInterval(loop);
+
+  const speed = document.getElementById("speed").value;
+  color = document.getElementById("theme").value;
+
+  init();
+  loop = setInterval(draw, speed);
+}
+
+startGame();
+</script>
+
+</body>
+</html>
